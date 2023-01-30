@@ -17,6 +17,8 @@ class CSVFile():
                     if len(line) >= 2:
                         line[1] = line[1].strip('\n')
                         self.lines_clean.append(line)
+                if len(self.lines_clean[1:]) == 0:
+                    return None
                 return self.lines_clean[1:]
         except FileNotFoundError as e:
             self.file_check = False
@@ -30,23 +32,27 @@ class CSVTimeSeriesFile(CSVFile):
 
     def get_data(self):
         data = super().get_data()
-        if self.controllo_no_duplicati(data):
-            if self.controllo_ordine(data):
-                out_data = []
-                for line in data:
-                    if self.is_num(line[0]) and self.is_num(line[1]):
-                        line[0] = int(line[0])
-                        line[1] = float(line[1])
-                        out_data.append(line)
-                    else:
-                        print('Errore: non è stato possibile convertire: {}'.
-                              format(line))
-                return out_data
+        if data is not None:
+            if self.controllo_no_duplicati(data):
+                if self.controllo_ordine(data):
+                    out_data = []
+                    for line in data:
+                        if self.is_num(line[0]) and self.is_num(line[1]):
+                            line[0] = int(line[0])
+                            line[1] = float(line[1])
+                            out_data.append(line)
+                        else:
+                            print(
+                                'Errore: non è stato possibile convertire: {}'.
+                                format(line))
+                    return out_data
+                else:
+                    raise ExamException('Errore: la lista è disordinata')
             else:
-                raise ExamException('Errore: la lista è disordinata')
+                raise ExamException(
+                    'Errore: la lista contiene epoch dei duplicati')
         else:
-            raise ExamException(
-                'Errore: la lista contiene epoch dei duplicati')
+            raise ExamException('Errore: file vuoto')
 
     #controlla che non ci siano epoch duplicati
     def controllo_no_duplicati(self, lista):
@@ -67,34 +73,37 @@ class CSVTimeSeriesFile(CSVFile):
 
 
 def compute_daily_max_difference(time_series):
-    daily_diff = []
-    temp_min = time_series[0][1]
-    temp_max = time_series[0][1]
-    time_series = [[(epoch[0] - (epoch[0] % 86400)), epoch[1]]
-                   for epoch in time_series]
-    current_day = time_series[0][0]
-    counter = 0
-    for line in time_series:
-        if line[0] == current_day:
-            counter += 1
-            if (line[1] < temp_min):
-                temp_min = line[1]
-            elif (line[1] > temp_max):
-                temp_max = line[1]
-        else:
-            if counter <= 1:
-                daily_diff.append(None)
+    if time_series is not None:
+        daily_diff = []
+        temp_min = time_series[0][1]
+        temp_max = time_series[0][1]
+        time_series = [[(epoch[0] - (epoch[0] % 86400)), epoch[1]]
+                       for epoch in time_series]
+        current_day = time_series[0][0]
+        counter = 0
+        for line in time_series:
+            if line[0] == current_day:
+                counter += 1
+                if (line[1] < temp_min):
+                    temp_min = line[1]
+                elif (line[1] > temp_max):
+                    temp_max = line[1]
             else:
-                daily_diff.append(round((temp_max - temp_min), 2))
-            current_day = line[0]
-            temp_max = line[1]
-            temp_min = line[1]
-            counter = 0
-    if counter <= 1:
-        daily_diff.append(None)
+                if counter <= 1:
+                    daily_diff.append(None)
+                else:
+                    daily_diff.append(round((temp_max - temp_min), 2))
+                current_day = line[0]
+                temp_max = line[1]
+                temp_min = line[1]
+                counter = 0
+        if counter <= 1:
+            daily_diff.append(None)
+        else:
+            daily_diff.append(round((temp_max - temp_min), 2))
+        return daily_diff
     else:
-        daily_diff.append(round((temp_max - temp_min), 2))
-    return daily_diff
+        raise ExamException('Errore: la lista fornita è vuota')
 
 
 #Per Tests:
