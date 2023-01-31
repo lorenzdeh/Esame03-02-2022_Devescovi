@@ -21,7 +21,6 @@ class CSVFile():
                     return None
                 return self.lines_clean[1:]
         except FileNotFoundError as e:
-            self.file_check = False
             raise ExamException('Errore: {}'.format(e))
 
 
