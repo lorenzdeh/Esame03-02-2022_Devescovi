@@ -31,44 +31,47 @@ class CSVTimeSeriesFile(CSVFile):
 
     def get_data(self):
         data = super().get_data()
-        if data is not None:
-            if self.controllo_no_duplicati(data):
-                if self.controllo_ordine(data):
-                    out_data = []
-                    for line in data:
-                        if self.is_num(line[0]) and self.is_num(line[1]):
-                            line[0] = int(line[0])
-                            line[1] = float(line[1])
-                            out_data.append(line)
-                        else:
-                            print(
-                                'Errore: non è stato possibile convertire: {}'.
-                                format(line))
-                    return out_data
-                else:
-                    raise ExamException('Errore: la lista è disordinata')
-            else:
-                raise ExamException(
-                    'Errore: la lista contiene epoch dei duplicati')
-        else:
+        if data is None:
             raise ExamException('Errore: file vuoto')
+        if epoch_duplicate(data):
+            raise ExamException(
+                'Errore: la lista contiene epoch dei duplicati')
+        if lista_non_in_ordine(data):
+            raise ExamException('Errore: la lista è disordinata')
 
-    #controlla che non ci siano epoch duplicati
-    def controllo_no_duplicati(self, lista):
-        lista_epoch = [riga[0] for riga in lista]
-        return len(lista_epoch) == len(set(lista_epoch))
+        return clean_data(data)
 
-    #controlla che gli epoch siano in ordine
-    def controllo_ordine(self, lista):
-        lista_epoch = [riga[0] for riga in lista]
-        return lista_epoch == sorted(lista_epoch)
 
-    def is_num(self, ele):
-        try:
-            float(ele)
-            return True
-        except:
-            return False
+def clean_data(data):
+    lista_pulita = []
+    for line in data:
+        if is_float(line[0]) and is_float(line[1]):
+            line[0] = int(line[0])
+            line[1] = float(line[1])
+            lista_pulita.append(line)
+        else:
+            print('Errore: non è stato possibile convertire: {}'.format(line))
+    return lista_pulita
+
+
+#controlla che non ci siano epoch duplicati
+def epoch_duplicate(lista):
+    lista_epoch = [riga[0] for riga in lista]
+    return len(lista_epoch) != len(set(lista_epoch))
+
+
+#controlla che gli epoch siano in ordine
+def lista_non_in_ordine(lista):
+    lista_epoch = [riga[0] for riga in lista]
+    return lista_epoch != sorted(lista_epoch)
+
+
+def is_float(number):
+    try:
+        float(number)
+        return True
+    except:
+        return False
 
 
 def compute_daily_max_difference(time_series):
@@ -106,23 +109,23 @@ def compute_daily_max_difference(time_series):
 
 
 #Per Tests:
-time_series_file = CSVTimeSeriesFile(name='data.csv')
-time_series = time_series_file.get_data()
-
-output = compute_daily_max_difference(time_series)
-print('\n{}\n'.format(output))
-
-with open("result.txt", "w") as f:
-    for line in output:
-        f.write(f"{line}\n")
-
-check_dis = False
+do_test = True
+write_in_file = True
+check_disorg = False
 check_dup = False
-
-if (check_dis):
+if (do_test):
+    time_series_file = CSVTimeSeriesFile(name='data.csv')
+    time_series = time_series_file.get_data()
+    output = compute_daily_max_difference(time_series)
+    print('\n{}\n'.format(output))
+    if write_in_file:
+        with open("result.txt", "w") as f:
+            for line in output:
+                f.write(f"{line}\n")
+if check_disorg:
     time_series_file_disorg = CSVTimeSeriesFile(
-        name='data_ruided_2_disorg.csv')
+        name='data_ruined_2_disorg.csv')
     time_series = time_series_file_disorg.get_data()
-if (check_dup):
-    time_series_file_dup = CSVTimeSeriesFile(name='data_ruided_2_dup.csv')
+if check_dup:
+    time_series_file_dup = CSVTimeSeriesFile(name='data_ruined_2_dup.csv')
     time_series = time_series_file_dup.get_data()
