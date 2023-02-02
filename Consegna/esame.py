@@ -106,26 +106,3 @@ def compute_daily_max_difference(time_series):
         return daily_diff
     else:
         raise ExamException('Errore: la lista fornita è vuota')
-
-
-#Per Tests:
-do_test = True
-write_in_file = True
-check_disorg = False
-check_dup = False
-if (do_test):
-    time_series_file = CSVTimeSeriesFile(name='data.csv')
-    time_series = time_series_file.get_data()
-    output = compute_daily_max_difference(time_series)
-    print('\n{}\n'.format(output))
-    if write_in_file:
-        with open("result.txt", "w") as f:
-            for line in output:
-                f.write(f"{line}\n")
-if check_disorg:
-    time_series_file_disorg = CSVTimeSeriesFile(
-        name='data_ruined_2_disorg.csv')
-    time_series = time_series_file_disorg.get_data()
-if check_dup:
-    time_series_file_dup = CSVTimeSeriesFile(name='data_ruined_2_dup.csv')
-    time_series = time_series_file_dup.get_data()
